@@ -2,13 +2,13 @@
    SUBSTITUA AS CREDENCIAIS ABAIXO PELO SEU PROJETO FIREBASE
    ============================================================ */
 const firebaseConfig = {
-  apiKey: "AIzaSyCdbgPcsM-RLHzDkClVToAhGhOizfLvu6o",
-  authDomain: "kitopl2.firebaseapp.com",
-  databaseURL: "https://kitopl2-default-rtdb.firebaseio.com",
-  projectId: "kitopl2",
-  storageBucket: "kitopl2.firebasestorage.app",
-  messagingSenderId: "529504176070",
-  appId: "1:529504176070:web:2c20baf1163b98f563d4c7"
+  apiKey: "AIzaSyCfLBi8RFp8zrFfZP_8G6Nqsqtuy2YXL6o",
+  authDomain: "sucatasaojosesite.firebaseapp.com",
+  databaseURL: "https://sucatasaojosesite-default-rtdb.firebaseio.com/",
+  projectId: "sucatasaojosesite",
+  storageBucket: "sucatasaojosesite.firebasestorage.app",
+  messagingSenderId: "908319944936",
+  appId: "1:908319944936:web:99a8c0bb377e12e508995d"
 };
 
 /* ============================================================
