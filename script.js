@@ -42,7 +42,7 @@ const state = {
   bannerIndex: 0,
   bannerTimer: null,
   search: "",
-  theme: "dark"
+  theme: "light"
 };
 
 /* ============================================================
@@ -107,8 +107,8 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  let saved = "dark";
-  try { saved = localStorage.getItem("ssj-theme") || "dark"; } catch (e) {}
+  let saved = "light";
+  try { saved = localStorage.getItem("ssj-theme") || "light"; } catch (e) {}
   applyTheme(saved);
 }
 
