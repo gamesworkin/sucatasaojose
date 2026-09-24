@@ -342,7 +342,35 @@
             <span id="modal-price"></span>
           </div>
         </div>
-        <a id="modal-buy" href="#" class="btn-primary" target="_blank">Comprar agora</a>
+        <div class="modal-actions">
+          <a id="modal-buy" href="#" class="btn-primary" target="_blank" rel="noopener">Comprar agora</a>
+          <button type="button" id="modal-share" class="btn-share-modal" aria-label="Compartilhar este produto">
+            <span aria-hidden="true">↗</span> Compartilhar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de compartilhamento -->
+  <div class="modal-overlay share-overlay" id="share-modal" aria-hidden="true">
+    <div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+      <div class="modal-header">
+        <h3 id="share-modal-title">Compartilhar produto</h3>
+        <button class="modal-close" aria-label="Fechar compartilhamento">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="share-product-name" id="share-product-name"></p>
+        <div class="share-grid">
+          <a id="share-whatsapp" class="share-option whatsapp" href="#" target="_blank" rel="noopener"><span class="share-icon-mark">W</span><span>WhatsApp</span></a>
+          <a id="share-facebook" class="share-option facebook" href="#" target="_blank" rel="noopener"><span class="share-icon-mark">f</span><span>Facebook</span></a>
+          <a id="share-x" class="share-option x-network" href="#" target="_blank" rel="noopener"><span class="share-icon-mark">X</span><span>X</span></a>
+          <a id="share-telegram" class="share-option telegram" href="#" target="_blank" rel="noopener"><span class="share-icon-mark">T</span><span>Telegram</span></a>
+          <a id="share-linkedin" class="share-option linkedin" href="#" target="_blank" rel="noopener"><span class="share-icon-mark">in</span><span>LinkedIn</span></a>
+          <a id="share-email" class="share-option email" href="#"><span class="share-icon-mark">@</span><span>E-mail</span></a>
+        </div>
+        <button type="button" id="share-native" class="share-native-btn"><span aria-hidden="true">↗</span> Mais apps do aparelho</button>
+        <button type="button" id="share-copy" class="share-copy-btn"><span aria-hidden="true">⧉</span> Copiar link</button>
       </div>
     </div>
   </div>

@@ -1552,3 +1552,153 @@ textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+
+/* ============================================================
+   COMPARTILHAMENTO DE PRODUTOS
+   ============================================================ */
+.card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.card-share-btn {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  font-size: 1.2rem;
+  font-weight: 800;
+  transition: var(--transition);
+}
+
+.card-share-btn:hover,
+.card-share-btn:focus-visible {
+  background: var(--primary);
+  color: var(--on-primary);
+  transform: translateY(-2px);
+  outline: none;
+  box-shadow: 0 0 14px rgba(var(--primary-rgb), 0.4);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+}
+
+.btn-share-modal,
+.share-native-btn,
+.share-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.btn-share-modal {
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.35);
+}
+
+.btn-share-modal:hover,
+.share-native-btn:hover,
+.share-copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(var(--primary-rgb), 0.25);
+}
+
+.share-overlay { z-index: 2100; }
+.share-modal { max-width: 430px; }
+.share-product-name {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.share-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 92px;
+  padding: 0.7rem 0.35rem;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid rgba(var(--overlay-rgb), 0.1);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  transition: var(--transition);
+}
+
+.share-option:hover,
+.share-option:focus-visible {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  outline: none;
+}
+
+.share-icon-mark {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--on-primary);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.share-option.whatsapp .share-icon-mark { background: #25d366; }
+.share-option.facebook .share-icon-mark { background: #1877f2; }
+.share-option.x-network .share-icon-mark { background: #111111; }
+.share-option.telegram .share-icon-mark { background: #229ed9; }
+.share-option.linkedin .share-icon-mark { background: #0a66c2; }
+.share-option.email .share-icon-mark { background: var(--primary); }
+
+.share-native-btn,
+.share-copy-btn {
+  width: 100%;
+}
+.share-native-btn {
+  background: var(--primary);
+  color: var(--on-primary);
+  margin-bottom: 0.65rem;
+}
+.share-copy-btn {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+}
+
+@media (max-width: 480px) {
+  .card-body { padding: 0.8rem; }
+  .card-share-btn { width: 34px; height: 34px; flex-basis: 34px; }
+  .modal-actions { grid-template-columns: 1fr; }
+  .share-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -42,7 +42,8 @@ const state = {
   bannerIndex: 0,
   bannerTimer: null,
   search: "",
-  theme: "light"
+  theme: "light",
+  sharingProduct: null
 };
 
 /* ============================================================
@@ -122,13 +123,20 @@ function escapeHtml(str) {
 }
 
 function openModal(id) {
-  document.getElementById(id).classList.add("open");
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.remove("open");
-  document.body.style.overflow = "";
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  const hasOpenModal = document.querySelector(".modal-overlay.open");
+  document.body.style.overflow = hasOpenModal ? "hidden" : "";
 }
 
 function normalize(str) {
@@ -561,7 +569,12 @@ function buildCard(p) {
       <div class="card-body">
         <h3 class="card-title">${escapeHtml(p.title)}</h3>
         <p class="card-desc">${escapeHtml(p.description)}</p>
-        <p class="card-price${isNegotiable(p) ? " negotiable" : ""}">${priceLabel(p)}</p>
+        <div class="card-footer">
+          <p class="card-price${isNegotiable(p) ? " negotiable" : ""}">${priceLabel(p)}</p>
+          <button type="button" class="card-share-btn" onclick="openShareModal(event, '${p.id}')" aria-label="Compartilhar ${escapeHtml(p.title)}" title="Compartilhar">
+            <span aria-hidden="true">↗</span>
+          </button>
+        </div>
       </div>
     </article>
   `;
@@ -608,8 +621,80 @@ function openProdutoModal(id) {
     return opt ? `<span class="badge ${opt.badgeClass}">${opt.label}</span>` : "";
   }).join("");
   document.getElementById("modal-triggers").innerHTML = triggers;
+  document.getElementById("modal-share").dataset.productId = p.id;
 
   openModal("produto-modal");
+}
+
+
+
+/* ============================================================
+   COMPARTILHAMENTO DE PRODUTOS
+   ============================================================ */
+function getProductShareData(p) {
+  const pageUrl = window.location.href.split("#")[0];
+  const url = `${pageUrl}#produto-${encodeURIComponent(p.id)}`;
+  const text = `${p.title} — ${priceLabel(p)} | Sucata São José`;
+  return { title: p.title || "Produto", text, url };
+}
+
+function openShareModal(event, id) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const p = state.produtos.find((item) => item.id === id);
+  if (!p) return;
+
+  state.sharingProduct = p;
+  const share = getProductShareData(p);
+  const encodedUrl = encodeURIComponent(share.url);
+  const encodedText = encodeURIComponent(share.text);
+
+  document.getElementById("share-product-name").textContent = share.text;
+  document.getElementById("share-whatsapp").href = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+  document.getElementById("share-facebook").href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+  document.getElementById("share-x").href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+  document.getElementById("share-telegram").href = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+  document.getElementById("share-linkedin").href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+  document.getElementById("share-email").href = `mailto:?subject=${encodeURIComponent("Confira: " + share.title)}&body=${encodedText}%0A${encodedUrl}`;
+  openModal("share-modal");
+}
+
+async function shareWithDeviceApps() {
+  if (!state.sharingProduct) return;
+  const share = getProductShareData(state.sharingProduct);
+  if (navigator.share) {
+    try {
+      await navigator.share(share);
+      closeModal("share-modal");
+    } catch (err) {
+      if (err && err.name !== "AbortError") showToast("Não foi possível abrir o compartilhamento.", "error");
+    }
+  } else {
+    copyShareLink();
+    showToast("Seu aparelho não oferece o menu de apps. Link copiado!", "info");
+  }
+}
+
+async function copyShareLink() {
+  if (!state.sharingProduct) return;
+  const share = getProductShareData(state.sharingProduct);
+  try {
+    await navigator.clipboard.writeText(share.url);
+    showToast("Link do produto copiado!", "success");
+  } catch (err) {
+    const field = document.createElement("textarea");
+    field.value = share.url;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    document.execCommand("copy");
+    field.remove();
+    showToast("Link do produto copiado!", "success");
+  }
 }
 
 /* ============================================================
@@ -1111,6 +1196,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("produto-form").addEventListener("submit", saveProduto);
   document.getElementById("produto-cancel").addEventListener("click", resetProdutoForm);
+  document.getElementById("modal-share").addEventListener("click", (event) => openShareModal(event, event.currentTarget.dataset.productId));
+  document.getElementById("share-native").addEventListener("click", shareWithDeviceApps);
+  document.getElementById("share-copy").addEventListener("click", copyShareLink);
   document.getElementById("menu-form").addEventListener("submit", saveMenuItem);
   document.getElementById("menu-cancel").addEventListener("click", resetMenuForm);
   document.getElementById("brand-form").addEventListener("submit", saveBrand);
@@ -1119,16 +1207,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".modal-close").forEach((btn) => {
     btn.addEventListener("click", () => {
       const modal = btn.closest(".modal-overlay");
-      modal.classList.remove("open");
-      document.body.style.overflow = "";
+      closeModal(modal.id);
     });
   });
 
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) {
-        overlay.classList.remove("open");
-        document.body.style.overflow = "";
+        closeModal(overlay.id);
       }
     });
   });
