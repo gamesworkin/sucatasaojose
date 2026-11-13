@@ -155,10 +155,19 @@
               </div>
             </form>
 
-            <h3 style="margin-top:2rem;">Produtos cadastrados</h3>
+            <h3 class="admin-list-title">Produtos cadastrados</h3>
+            <div class="admin-list-toolbar">
+              <div class="admin-search">
+                <span aria-hidden="true">🔎</span>
+                <input type="search" id="produtos-admin-search" placeholder="Pesquisar produtos..." autocomplete="off">
+              </div>
+              <span class="admin-count" id="produtos-admin-count"></span>
+            </div>
+            
             <div class="admin-list" id="produtos-list">
               <!-- Lista via JS -->
             </div>
+            <div class="admin-pagination" id="produtos-admin-pagination"></div>
           </div>
 
           <!-- Menu -->
@@ -189,6 +198,13 @@
                     <!-- Preenchido via JS -->
                   </select>
                 </div>
+                <div class="form-group">
+                  <label>Abertura do link</label>
+                  <label class="negotiate-check" for="menu-newtab">
+                    <input type="checkbox" id="menu-newtab">
+                    <span>Abrir em nova aba</span>
+                  </label>
+                </div>
               </div>
               <div class="form-actions">
                 <button type="submit" class="btn-save">Salvar item</button>
@@ -196,10 +212,19 @@
               </div>
             </form>
 
-            <h3 style="margin-top:2rem;">Itens do menu</h3>
+            <h3 class="admin-list-title">Itens do menu</h3>
+            <div class="admin-list-toolbar">
+              <div class="admin-search">
+                <span aria-hidden="true">🔎</span>
+                <input type="search" id="menu-admin-search" placeholder="Pesquisar itens do menu..." autocomplete="off">
+              </div>
+              <span class="admin-count" id="menu-admin-count"></span>
+            </div>
+            
             <div class="admin-list" id="menu-list">
               <!-- Lista via JS -->
             </div>
+            <div class="admin-pagination" id="menu-admin-pagination"></div>
           </div>
 
           <!-- Marca -->
@@ -263,8 +288,17 @@
                 <button type="button" id="banner-cancel" class="btn-cancel hidden">Cancelar</button>
               </div>
             </form>
-            <h3 style="margin-top:2rem;">Banners cadastrados</h3>
+            <h3 class="admin-list-title">Banners cadastrados</h3>
+            <div class="admin-list-toolbar">
+              <div class="admin-search">
+                <span aria-hidden="true">🔎</span>
+                <input type="search" id="banners-admin-search" placeholder="Pesquisar banners..." autocomplete="off">
+              </div>
+              <span class="admin-count" id="banners-admin-count"></span>
+            </div>
+            
             <div class="admin-list" id="banners-list"></div>
+            <div class="admin-pagination" id="banners-admin-pagination"></div>
           </div>
 
           <!-- Rodapé -->

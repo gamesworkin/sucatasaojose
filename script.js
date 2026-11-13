@@ -29,6 +29,8 @@ const MARKETING_TRIGGERS = [
 const state = {
   produtos: [],
   menu: [],
+  adminSearch: { produtos: "", menu: "", banners: "" },
+  adminPage: { produtos: 1, menu: 1, banners: 1 },
   footer: { columns: [], copyright: "© Todos os direitos reservados." },
   brand: { square: "", wide: "" },
   user: null,
@@ -325,6 +327,10 @@ async function saveBrand(e) {
 /* ============================================================
    MENU (MISTO: LINKS DIRETOS + SUBMENUS)
    ============================================================ */
+function linkAttrs(item) {
+  return item && item.newTab ? ' target="_blank" rel="noopener noreferrer"' : "";
+}
+
 function renderMenu() {
   const desktop = document.getElementById("menu-desktop");
   const mobile = document.getElementById("mobile-menu-list");
@@ -346,13 +352,13 @@ function buildDesktopItem(item, childrenFn) {
       <li class="menu-item">
         <span class="menu-toggle">${escapeHtml(item.name)} <span class="arrow">▾</span></span>
         <ul class="submenu">
-          ${kids.map((k) => `<li><a class="menu-link" href="${escapeHtml(k.link || "#")}">${escapeHtml(k.name)}</a></li>`).join("")}
+          ${kids.map((k) => `<li><a class="menu-link" href="${escapeHtml(k.link || "#")}"${linkAttrs(k)}>${escapeHtml(k.name)}</a></li>`).join("")}
         </ul>
       </li>
     `;
   }
 
-  return `<li class="menu-item"><a class="menu-link" href="${escapeHtml(item.link || "#")}">${escapeHtml(item.name)}</a></li>`;
+  return `<li class="menu-item"><a class="menu-link" href="${escapeHtml(item.link || "#")}"${linkAttrs(item)}>${escapeHtml(item.name)}</a></li>`;
 }
 
 function buildMobileItem(item, idx, childrenFn) {
@@ -364,13 +370,13 @@ function buildMobileItem(item, idx, childrenFn) {
       <li>
         <span class="submenu-toggle" onclick="toggleMobileSubmenu(${idx})">${escapeHtml(item.name)} <span id="arrow-${idx}">▾</span></span>
         <ul class="mobile-submenu" id="mobile-submenu-${idx}">
-          ${kids.map((k) => `<li><a href="${escapeHtml(k.link || "#")}">${escapeHtml(k.name)}</a></li>`).join("")}
+          ${kids.map((k) => `<li><a href="${escapeHtml(k.link || "#")}"${linkAttrs(k)}>${escapeHtml(k.name)}</a></li>`).join("")}
         </ul>
       </li>
     `;
   }
 
-  return `<li><a href="${escapeHtml(item.link || "#")}">${escapeHtml(item.name)}</a></li>`;
+  return `<li><a href="${escapeHtml(item.link || "#")}"${linkAttrs(item)}>${escapeHtml(item.name)}</a></li>`;
 }
 
 function toggleMobileSubmenu(idx) {
@@ -402,6 +408,75 @@ if (waButton) {
 }
 
 /* ============================================================
+   ADMIN: PESQUISA + PAGINAÇÃO (10 por página, até 5 números visíveis)
+   ============================================================ */
+const ADMIN_PER_PAGE = 10;
+const ADMIN_MAX_PAGES = 5;
+
+function adminPaginate(key, items) {
+  const totalPages = Math.max(1, Math.ceil(items.length / ADMIN_PER_PAGE));
+  if (state.adminPage[key] > totalPages) state.adminPage[key] = totalPages;
+  if (state.adminPage[key] < 1) state.adminPage[key] = 1;
+  const start = (state.adminPage[key] - 1) * ADMIN_PER_PAGE;
+  return { pageItems: items.slice(start, start + ADMIN_PER_PAGE), start, totalPages };
+}
+
+function renderAdminPagination(key, totalPages, renderFn) {
+  const el = document.getElementById(key + "-admin-pagination");
+  if (!el) return;
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+  const cur = state.adminPage[key];
+  let first = Math.max(1, cur - Math.floor(ADMIN_MAX_PAGES / 2));
+  let last = Math.min(totalPages, first + ADMIN_MAX_PAGES - 1);
+  first = Math.max(1, last - ADMIN_MAX_PAGES + 1);
+  const hasMore = totalPages > ADMIN_MAX_PAGES;
+  let html = "";
+  if (hasMore) html += `<button type="button" data-page="${cur - 1}" ${cur === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>`;
+  for (let p = first; p <= last; p++) {
+    html += `<button type="button" data-page="${p}" class="${p === cur ? "active" : ""}">${p}</button>`;
+  }
+  if (hasMore) html += `<button type="button" data-page="${cur + 1}" ${cur === totalPages ? "disabled" : ""} aria-label="Próxima página">›</button>`;
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-page]").forEach((b) => b.addEventListener("click", () => {
+    state.adminPage[key] = Number(b.dataset.page);
+    renderFn();
+  }));
+}
+
+function setAdminCount(key, shown, total) {
+  const el = document.getElementById(key + "-admin-count");
+  if (!el) return;
+  el.textContent = shown === total ? `${total} ${total === 1 ? "item" : "itens"}` : `${shown} de ${total}`;
+}
+
+function matchesAdminSearch(key, ...fields) {
+  const q = normalize(state.adminSearch[key] || "");
+  if (!q) return true;
+  return fields.some((f) => normalize(f || "").includes(q));
+}
+
+/* Reordena só os itens visíveis da página, preservando a posição dos demais */
+function mergePageOrder(fullIds, pageIdsBefore, pageIdsAfter) {
+  const slots = [];
+  fullIds.forEach((id, i) => { if (pageIdsBefore.includes(id)) slots.push(i); });
+  const result = fullIds.slice();
+  slots.forEach((slot, i) => { result[slot] = pageIdsAfter[i]; });
+  return result;
+}
+
+function bindPagedOrder(container, path, fullIds, offset) {
+  const before = getContainerIds(container);
+  const cb = (ids) => persistOrder(path, mergePageOrder(fullIds, before, ids));
+  container.dataset.offset = offset || 0;
+  enableDragSort(container, cb);
+  enableOrderInputs(container, cb);
+}
+
+function noResults(msg) {
+  return `<p class="admin-empty">${msg}</p>`;
+}
+
+/* ============================================================
    ADMIN MENU
    ============================================================ */
 function renderAdminMenu() {
@@ -409,36 +484,55 @@ function renderAdminMenu() {
   const parentSelect = document.getElementById("menu-parent");
   if (!list) return;
 
-  const buildRow = (item, isChild, index) => `
+  const buildRow = (item, isChild, pos) => `
       <div class="admin-list-item draggable${isChild ? " sub-indent" : ""}" draggable="true" data-id="${item.id}">
         <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-        <input type="number" class="order-input" min="1" step="1" value="${index + 1}" data-id="${item.id}" title="Posição (digite o número e pressione Enter)">
-        <div>
+        <input type="number" class="order-input" min="1" step="1" value="${pos}" data-id="${item.id}" title="Posição (digite o número e pressione Enter)">
+        <div class="admin-item-info">
           <strong>${escapeHtml(item.name)}</strong>
-          <br><small>${item.link ? "Link: " + escapeHtml(item.link) : "Sem link (pai de submenu)"}</small>
-          <br><small>${isChild ? "Subitem" : "Item de topo"}</small>
+          <small>${item.link ? escapeHtml(item.link) : "Sem link (pai de submenu)"}</small>
+          <span class="admin-tags">
+            <span class="admin-tag">${isChild ? "Subitem" : "Topo"}</span>
+            ${item.newTab ? '<span class="admin-tag tag-accent">Nova aba ↗</span>' : ""}
+          </span>
         </div>
         <div class="admin-list-actions">
-          <button class="btn-save" onclick="editMenuItem('${item.id}')">Editar</button>
-          <button class="btn-danger" onclick="deleteMenuItem('${item.id}')">Excluir</button>
+          <button class="btn-save" onclick="editMenuItem('${item.id}')" title="Editar">✎<span class="btn-label"> Editar</span></button>
+          <button class="btn-danger" onclick="deleteMenuItem('${item.id}')" title="Excluir">🗑<span class="btn-label"> Excluir</span></button>
         </div>
       </div>`;
 
   const tops = state.menu.filter((m) => !m.parentId).sort(byOrder);
-  list.innerHTML = `<div class="admin-drag-list" data-parent="">
-      ${tops.map((t, ti) => buildRow(t, false, ti) + (
-        state.menu.filter((c) => c.parentId === t.id).length
+  const topIds = tops.map((t) => t.id);
+  const kidsOf = (id) => state.menu.filter((c) => c.parentId === id).sort(byOrder);
+  const filtered = tops.filter((t) =>
+    matchesAdminSearch("menu", t.name, t.link) ||
+    kidsOf(t.id).some((k) => matchesAdminSearch("menu", k.name, k.link))
+  );
+  setAdminCount("menu", filtered.length, tops.length);
+  const { pageItems, start: offset, totalPages } = adminPaginate("menu", filtered);
+
+  if (!pageItems.length) {
+    list.innerHTML = noResults(tops.length ? "Nenhum item encontrado." : "Nenhum item de menu cadastrado.");
+  } else {
+    list.innerHTML = `<div class="admin-drag-list" data-parent="">
+      ${pageItems.map((t) => {
+        const kids = kidsOf(t.id);
+        return buildRow(t, false, topIds.indexOf(t.id) + 1) + (kids.length
           ? `<div class="admin-drag-list admin-list-group" data-parent="${t.id}">
-               ${state.menu.filter((c) => c.parentId === t.id).sort(byOrder).map((c, ci) => buildRow(c, true, ci)).join("")}
+               ${kids.map((c, ci) => buildRow(c, true, ci + 1)).join("")}
              </div>`
-          : ""
-      )).join("")}
+          : "");
+      }).join("")}
     </div>`;
 
-  list.querySelectorAll(".admin-drag-list").forEach((container) => {
-    enableDragSort(container, (ids) => persistOrder("menu", ids));
-    enableOrderInputs(container, (ids) => persistOrder("menu", ids));
-  });
+    list.querySelectorAll(".admin-drag-list").forEach((container) => {
+      const parent = container.dataset.parent;
+      if (parent) bindPagedOrder(container, "menu", kidsOf(parent).map((k) => k.id), 0);
+      else bindPagedOrder(container, "menu", topIds, topIds.indexOf(pageItems[0].id));
+    });
+  }
+  renderAdminPagination("menu", totalPages, renderAdminMenu);
 
   const topItems = state.menu.filter((m) => !m.parentId).sort(byOrder);
   parentSelect.innerHTML = `<option value="">Nenhum (item de topo)</option>` +
@@ -457,6 +551,7 @@ function saveMenuItem(e) {
   const name = document.getElementById("menu-name").value.trim();
   const link = document.getElementById("menu-link").value.trim();
   const parentId = document.getElementById("menu-parent").value || null;
+  const newTab = document.getElementById("menu-newtab").checked;
 
   if (!name) {
     showToast("Digite um nome para o menu.", "error");
@@ -468,7 +563,7 @@ function saveMenuItem(e) {
     ? existing.order
     : nextOrder(state.menu.filter((m) => (m.parentId || null) === parentId));
 
-  const data = { name, link, parentId, order };
+  const data = { name, link, parentId, order, newTab };
   const ref = state.menuEditingId
     ? db.ref("menu/" + state.menuEditingId)
     : db.ref("menu").push();
@@ -488,6 +583,7 @@ function editMenuItem(id) {
   document.getElementById("menu-name").value = item.name;
   document.getElementById("menu-link").value = item.link || "";
   document.getElementById("menu-parent").value = item.parentId || "";
+  document.getElementById("menu-newtab").checked = !!item.newTab;
   document.getElementById("menu-form-title").textContent = "Editar item de menu";
   document.getElementById("menu-cancel").classList.remove("hidden");
 }
@@ -503,6 +599,7 @@ function deleteMenuItem(id) {
 function resetMenuForm() {
   state.menuEditingId = null;
   document.getElementById("menu-form").reset();
+  document.getElementById("menu-newtab").checked = false;
   document.getElementById("menu-form-title").textContent = "Adicionar item de menu";
   document.getElementById("menu-cancel").classList.add("hidden");
 }
@@ -703,23 +800,33 @@ async function copyShareLink() {
 function renderAdminProdutos() {
   const list = document.getElementById("produtos-list");
   if (!list) return;
-  list.innerHTML = state.produtos.map((p, i) => `
+  const all = state.produtos;
+  const allIds = all.map((p) => p.id);
+  const filtered = all.filter((p) => matchesAdminSearch("produtos", p.title, p.description, p.cities));
+  setAdminCount("produtos", filtered.length, all.length);
+  const { pageItems, totalPages } = adminPaginate("produtos", filtered);
+
+  if (!pageItems.length) {
+    list.innerHTML = noResults(all.length ? "Nenhum produto encontrado." : "Nenhum produto cadastrado.");
+  } else {
+    list.innerHTML = pageItems.map((p) => `
     <div class="admin-list-item draggable" draggable="true" data-id="${p.id}" data-group="produtos">
       <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-      <input type="number" class="order-input" min="1" step="1" value="${i + 1}" data-id="${p.id}" title="Posição (digite o número e pressione Enter)">
-      <div>
+      <input type="number" class="order-input" min="1" step="1" value="${allIds.indexOf(p.id) + 1}" data-id="${p.id}" title="Posição (digite o número e pressione Enter)">
+      ${p.image ? `<img class="admin-thumb" src="${escapeHtml(p.image)}" alt="">` : ""}
+      <div class="admin-item-info">
         <strong>${escapeHtml(p.title)}</strong>
-        <br><small>${priceLabel(p)} — ${escapeHtml(p.description || "").substring(0, 60)}${p.description && p.description.length > 60 ? "..." : ""}</small>
+        <small><b>${priceLabel(p)}</b> — ${escapeHtml(p.description || "").substring(0, 60)}${p.description && p.description.length > 60 ? "..." : ""}</small>
       </div>
       <div class="admin-list-actions">
-        <button class="btn-save" onclick="editProduto('${p.id}')">Editar</button>
-        <button class="btn-danger" onclick="deleteProduto('${p.id}')">Excluir</button>
+        <button class="btn-save" onclick="editProduto('${p.id}')" title="Editar">✎<span class="btn-label"> Editar</span></button>
+        <button class="btn-danger" onclick="deleteProduto('${p.id}')" title="Excluir">🗑<span class="btn-label"> Excluir</span></button>
       </div>
     </div>
   `).join("");
-
-  enableDragSort(list, (ids) => persistOrder("produtos", ids));
-  enableOrderInputs(list, (ids) => persistOrder("produtos", ids));
+    bindPagedOrder(list, "produtos", allIds, allIds.indexOf(pageItems[0].id));
+  }
+  renderAdminPagination("produtos", totalPages, renderAdminProdutos);
 }
 
 function renderTriggersOptions() {
@@ -942,7 +1049,7 @@ function getContainerIds(container) {
 function refreshOrderInputs(container) {
   getContainerBlocks(container).forEach((block, index) => {
     const input = block[0].querySelector(".order-input");
-    if (input) input.value = index + 1;
+    if (input) input.value = index + 1 + Number(container.dataset.offset || 0);
   });
 }
 
@@ -979,7 +1086,8 @@ function enableOrderInputs(container, onChange) {
       const id = input.dataset.id;
       const value = parseInt(input.value, 10);
       if (isNaN(value)) return refreshOrderInputs(container);
-      const changed = moveBlockTo(container, id, value - 1);
+      const offset = Number(container.dataset.offset || 0);
+      const changed = moveBlockTo(container, id, value - 1 - offset);
       refreshOrderInputs(container);
       if (changed) onChange(getContainerIds(container));
     });
@@ -1077,30 +1185,33 @@ function startBannerAuto() {
 function renderAdminBanners() {
   const list = document.getElementById("banners-list");
   if (!list) return;
+  const all = state.banners;
+  const allIds = all.map((b) => b.id);
+  const filtered = all.filter((b) => matchesAdminSearch("banners", b.title, b.link));
+  setAdminCount("banners", filtered.length, all.length);
+  const { pageItems, totalPages } = adminPaginate("banners", filtered);
 
-  if (!state.banners.length) {
-    list.innerHTML = `<p style="color:var(--text-muted);">Nenhum banner cadastrado. Enquanto não houver banners, a área do rodapé fica oculta.</p>`;
-    return;
-  }
-
-  list.innerHTML = state.banners.map((b, i) => `
+  if (!pageItems.length) {
+    list.innerHTML = noResults(all.length ? "Nenhum banner encontrado." : "Nenhum banner cadastrado. Enquanto não houver banners, a área do rodapé fica oculta.");
+  } else {
+    list.innerHTML = pageItems.map((b) => `
     <div class="admin-list-item draggable" draggable="true" data-id="${b.id}">
       <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-      <input type="number" class="order-input" min="1" step="1" value="${i + 1}" data-id="${b.id}" title="Posição (digite o número e pressione Enter)">
-      <div>
-        <img class="banner-thumb" src="${escapeHtml(b.image)}" alt="${escapeHtml(b.title || "Banner")}">
-        <br><strong>${escapeHtml(b.title || "Sem título")}</strong>
-        <br><small>${b.link ? "Link: " + escapeHtml(b.link) : "Sem link"}</small>
+      <input type="number" class="order-input" min="1" step="1" value="${allIds.indexOf(b.id) + 1}" data-id="${b.id}" title="Posição (digite o número e pressione Enter)">
+      <img class="admin-thumb wide" src="${escapeHtml(b.image)}" alt="${escapeHtml(b.title || "Banner")}">
+      <div class="admin-item-info">
+        <strong>${escapeHtml(b.title || "Sem título")}</strong>
+        <small>${b.link ? escapeHtml(b.link) : "Sem link"}</small>
       </div>
       <div class="admin-list-actions">
-        <button class="btn-save" onclick="editBanner('${b.id}')">Editar</button>
-        <button class="btn-danger" onclick="deleteBanner('${b.id}')">Excluir</button>
+        <button class="btn-save" onclick="editBanner('${b.id}')" title="Editar">✎<span class="btn-label"> Editar</span></button>
+        <button class="btn-danger" onclick="deleteBanner('${b.id}')" title="Excluir">🗑<span class="btn-label"> Excluir</span></button>
       </div>
     </div>
   `).join("");
-
-  enableDragSort(list, (ids) => persistOrder("banners", ids));
-  enableOrderInputs(list, (ids) => persistOrder("banners", ids));
+    bindPagedOrder(list, "banners", allIds, allIds.indexOf(pageItems[0].id));
+  }
+  renderAdminPagination("banners", totalPages, renderAdminBanners);
 }
 
 async function saveBanner(e) {
@@ -1199,6 +1310,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-share").addEventListener("click", (event) => openShareModal(event, event.currentTarget.dataset.productId));
   document.getElementById("share-native").addEventListener("click", shareWithDeviceApps);
   document.getElementById("share-copy").addEventListener("click", copyShareLink);
+  [["produtos", renderAdminProdutos], ["menu", renderAdminMenu], ["banners", renderAdminBanners]].forEach(([key, fn]) => {
+    const input = document.getElementById(key + "-admin-search");
+    if (input) input.addEventListener("input", (e) => {
+      state.adminSearch[key] = e.target.value;
+      state.adminPage[key] = 1;
+      fn();
+    });
+  });
   document.getElementById("menu-form").addEventListener("submit", saveMenuItem);
   document.getElementById("menu-cancel").addEventListener("click", resetMenuForm);
   document.getElementById("brand-form").addEventListener("submit", saveBrand);
